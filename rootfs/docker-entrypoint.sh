@@ -50,16 +50,14 @@ if [ "$1" = "" ]; then
 		--log.level=info \
 		--web.listen-address=:9093 \
 		--storage.path=/alertmanager \
-		--config.file=/etc/alertmanager/alertmanager.yml
+		--config.file=/etc/alertmanager/alertmanager.yml \
+		--cluster.listen-address=:8001 \
+		--cluster.advertise-address=:8001 \
+		--cluster.peer=tasks.${DOCKERSWARM_SERVICE_NAME}:8001 \
+		--cluster.peer-timeout=30s \
+		--cluster.settle-timeout=60s \
+		--cluster.reconnect-timeout=90s
 fi
-
-# Add the cluster configuration to the command line arguments
-set -- "$@" --cluster.listen-address=:8001 \
-			--cluster.advertise-address=:8001 \
-			--cluster.peer=tasks.${DOCKERSWARM_SERVICE_NAME}:8001 \
-			--cluster.peer-timeout=30s \
-			--cluster.settle-timeout=60s \
-			--cluster.reconnect-timeout=90s \
 
 echo "==> Starting Alertmanager..."
 set -x
