@@ -37,6 +37,8 @@ if [ -z "$DOCKERSWARM_SERVICE_ID" ] || [ -z "$DOCKERSWARM_SERVICE_NAME" ] || [ -
 	exit 1
 fi
 
+ALERTMANAGER_CONFIG_FILE=${ALERTMANAGER_CONFIG_FILE:-"/etc/alertmanager/alertmanager.yml"}
+
 # If the user is trying to run Prometheus directly with some arguments, then
 # pass them to Prometheus.
 if [ "${1:0:1}" = '-' ]; then
@@ -50,7 +52,7 @@ if [ "$1" = "" ]; then
 		--log.level=info \
 		--web.listen-address=:9093 \
 		--storage.path=/alertmanager \
-		--config.file=/etc/alertmanager/alertmanager.yml \
+		--config.file="${ALERTMANAGER_CONFIG_FILE}" \
 		--cluster.listen-address=:8001 \
 		--cluster.advertise-address=:8001 \
 		--cluster.peer=tasks.${DOCKERSWARM_SERVICE_NAME}:8001 \
