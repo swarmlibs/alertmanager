@@ -12,6 +12,13 @@ x-exporter-resources-constraints: &x-exporter-resources-constraints
   reservations:
     memory: 64M
 
+x-deploy: &x-deploy
+  mode: global
+  placement:
+    max_replicas_per_node: 1
+    constraints:
+      - node.role == manager
+
 services:
 
   # ====================================================
@@ -22,11 +29,7 @@ services:
   alertmanager:
     image: swarmlibs/alertmanager:main
     deploy:
-      mode: global
-      placement:
-        max_replicas_per_node: 1
-        constraints:
-          - node.role == manager
+      <<: *x-deploy
       labels:
         io.prometheus.role: "alertmanager"
         io.prometheus.dockerswarm-tasks.should_be_scraped: "false"
@@ -45,7 +48,7 @@ services:
       - published: 9093
         target: 9093
         mode: host
-    hostname: alertmanager.{{.Node.ID}}.cluster.local
+    hostname: replica-{{.Task.Slot}}.alertmanager.cluster.local
     networks:
       alertmanager_internal:
       prometheus_gwnetwork:
@@ -56,30 +59,26 @@ services:
         source: alertmanager-data
         target: /alertmanager
 
-  alertmanager-config-reloader:
-    image: quay.io/prometheus-operator/prometheus-config-reloader:v0.74.0
-    command:
-      - --listen-address=:8080
-      - --watched-dir=/alertmanager-configs.d
-      - --reload-url=http://alertmanager:9093/-/reload
-    deploy:
-      mode: global
-      resources: *x-exporter-resources-constraints
-      placement:
-        max_replicas_per_node: 1
-        constraints:
-          - node.role == manager
-      labels:
-        io.prometheus.role: "alertmanager-config-reloader"
-        io.prometheus.dockerswarm-tasks.should_be_scraped: "false"
-        io.prometheus.dockerswarm-services.should_be_probed: "false"
-    logging: *x-default-logging
-    networks:
-      alertmanager_internal:
-    volumes:
-      - type: volume
-        source: alertmanager-configs
-        target: /alertmanager-configs.d
+  # alertmanager-config-reloader:
+  #   image: quay.io/prometheus-operator/prometheus-config-reloader:v0.74.0
+  #   command:
+  #     - --listen-address=:8080
+  #     - --watched-dir=/alertmanager-configs.d
+  #     - --reload-url=http://alertmanager:9093/-/reload
+  #   deploy:
+  #     <<: *x-deploy
+  #     resources: *x-exporter-resources-constraints
+  #     labels:
+  #       io.prometheus.role: "alertmanager-config-reloader"
+  #       io.prometheus.dockerswarm-tasks.should_be_scraped: "false"
+  #       io.prometheus.dockerswarm-services.should_be_probed: "false"
+  #   logging: *x-default-logging
+  #   networks:
+  #     alertmanager_internal:
+  #   volumes:
+  #     - type: volume
+  #       source: alertmanager-configs
+  #       target: /alertmanager-configs.d
 
 configs:
   prometheus-scrape-config-v1:
@@ -89,7 +88,7 @@ configs:
 
 volumes:
   alertmanager-data:
-  alertmanager-configs:
+  # alertmanager-configs:
 
 networks:
   alertmanager_internal:
